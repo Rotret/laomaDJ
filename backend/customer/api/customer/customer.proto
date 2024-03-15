@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package api.customer;
+
+//导入包
+import "google/api/annotations.proto";
+
+option go_package = "customer/api/customer;customer";
+
+
+service Customer {
+	//获取验证码
+	rpc GetVerifyCode (GetVerifyCodeReq) returns (GetVerifyCodeRes){
+		option(google.api.http)={//用的是http的方法需要定义一个http的选项
+			get: "/customer/get-verify-code/{telephone}"
+		};
+	}
+}
+
+message GetVerifyCodeReq{
+	string telephone=1;
+};
+
+message GetVerifyCodeRes{
+	int32 code=1;
+	string message=2;
+	string verify_code=3;
+	int64 verify_code_time=4;
+	int32 verify_code_life=5;
+};
+
