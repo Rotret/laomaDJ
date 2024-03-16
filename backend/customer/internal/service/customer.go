@@ -2,23 +2,25 @@ package service
 
 import (
 	"context"
-	"log"
 	"regexp"
 	"time"
 
 	pb "customer/api/customer"
 	"customer/api/verifyCode"
+	"customer/internal/data"
 
 	"github.com/go-kratos/kratos/v2/transport/grpc"
-	"github.com/go-redis/redis"
 )
 
 type CustomerService struct {
 	pb.UnimplementedCustomerServer
+	cd *data.CustomerData
 }
 
-func NewCustomerService() *CustomerService {
-	return &CustomerService{}
+func NewCustomerService(cd *data.CustomerData) *CustomerService {
+	return &CustomerService{
+		cd: cd,
+	}
 }
 
 func (s *CustomerService) GetVerifyCode(ctx context.Context, req *pb.GetVerifyCodeReq) (*pb.GetVerifyCodeRes, error) {
@@ -63,27 +65,11 @@ func (s *CustomerService) GetVerifyCode(ctx context.Context, req *pb.GetVerifyCo
 
 	//三、redis的临时存储
 	//连接redis
-	//redis.ParseURL("redis://user:password@localhost:6379/1?dial_timeout=1")
-	options, err := redis.ParseURL("redis://localhost:6379/1") //1是数据库，拨号超时时间为1秒
-	if err != nil {
-		log.Println(err)
-		return &pb.GetVerifyCodeRes{
-			Code:    1,
-			Message: "验证码临时存储错误（Redis解析URL错误）",
-		}, nil
-	}
-	rdb := redis.NewClient(options) //建立客户端，不会立即连接需，要执行命令时才会连接
-	//ping 测试连接
-	//status:=rdb.Ping(context.Background())
-	//status.Result() //pong,nil
-	//设置key，customer-verify-code
 	const life = 60
-	status := rdb.Set("CVC:"+req.Telephone, response.Code, life*time.Second)
-
-	if _, err := status.Result(); err != nil {
+	if err:=s.cd.GetVerifyCode(req.Telephone,response.Code,life);err != nil {
 		return &pb.GetVerifyCodeRes{
 			Code:    1,
-			Message: "验证码临时存储错误（Redis的Set操作错误）",
+			Message: "验证码存储错误（Redis的操作错误）",
 		}, nil
 	}
 
